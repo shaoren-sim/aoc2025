@@ -1,0 +1,12 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# env file
+.env
+
+# main inputs should be excluded as per Advent of Code rules
+input.txt
