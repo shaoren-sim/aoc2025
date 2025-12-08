@@ -79,10 +79,13 @@ func findMinimumIndex(distanceMat [][]int) (int, int) {
 	return minIndY, minIndX
 }
 
-func addToCircuits(circuits [][]int, indFrom int, indTo int) ([][]int, int) {
+func addToCircuits(circuits [][]int, indFrom int, indTo int) ([][]int, int, bool) {
 	for indCircuit, circuit := range circuits {
 		fromIn := slices.Contains(circuit, indFrom)
 		toIn := slices.Contains(circuit, indTo)
+		if fromIn && toIn {
+			return circuits, indCircuit, true
+		}
 		if fromIn || toIn {
 			if !fromIn {
 				circuit = append(circuit, indFrom)
@@ -91,20 +94,18 @@ func addToCircuits(circuits [][]int, indFrom int, indTo int) ([][]int, int) {
 				circuit = append(circuit, indTo)
 			}
 			circuits[indCircuit] = circuit
-			return circuits, indCircuit
+			return circuits, indCircuit, false
 		}
 	}
-	return circuits, -1
+	return circuits, -1, false
 }
 func compactCircuits(circuits [][]int) (newCircuits [][]int) {
 	usedIndices := make(map[int]int)
 	for _, circuit := range circuits {
-		fmt.Println(circuit)
 		newCircuit := make([]int, 0)
 		previousFound := false
 		for _, val := range circuit {
 			_, exists := usedIndices[val]
-			fmt.Println(exists, usedIndices)
 			if !exists {
 				usedIndices[val] = len(newCircuits)
 				newCircuit = append(newCircuit, val)
@@ -125,7 +126,6 @@ func compactCircuits(circuits [][]int) (newCircuits [][]int) {
 		if !previousFound {
 			newCircuits = append(newCircuits, newCircuit)
 		}
-		fmt.Println(newCircuits)
 	}
 
 	return newCircuits
@@ -171,7 +171,7 @@ func MainPart1() {
 		}
 		fmt.Println("Found connection between", minIndY, "and", minIndX)
 		// Adding to circuits.
-		circuits, matchedCircuitInd = addToCircuits(circuits, minIndY, minIndX)
+		circuits, matchedCircuitInd, _ = addToCircuits(circuits, minIndY, minIndX)
 		distanceMat[minIndY][minIndX] = 0
 		// fmt.Println(circuits, matchedCircuitInd)
 		if matchedCircuitInd == -1 {
