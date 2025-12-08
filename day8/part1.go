@@ -80,37 +80,60 @@ func findMinimumIndex(distanceMat [][]int) (int, int) {
 }
 
 func addToCircuits(circuits [][]int, indFrom int, indTo int) ([][]int, int) {
-	// fmt.Println("Checking circuits for", indFrom, "to", indTo, circuits)
-	maxCircuitLength := 0
-	for _, circuit := range circuits {
-		maxCircuitLength = max(maxCircuitLength, len(circuit))
-	}
-	for i := range maxCircuitLength {
-		// fmt.Println(i, "/", maxCircuitLength)
-		for indCircuit, circuit := range circuits {
-			if i >= len(circuit) {
-				break
+	for indCircuit, circuit := range circuits {
+		fromIn := slices.Contains(circuit, indFrom)
+		toIn := slices.Contains(circuit, indTo)
+		if fromIn || toIn {
+			if !fromIn {
+				circuit = append(circuit, indFrom)
 			}
-			if indFrom == circuit[i] || indTo == circuit[i] {
-				// fmt.Println("Found match of", indFrom, indTo, "in circuit", circuit)
-				if !slices.Contains(circuit, indFrom) {
-					circuit = append(circuit, indFrom)
-				}
-				if !slices.Contains(circuit, indTo) {
-					circuit = append(circuit, indTo)
-				}
-				circuits[indCircuit] = circuit
-				return circuits, indCircuit
+			if !toIn {
+				circuit = append(circuit, indTo)
 			}
+			circuits[indCircuit] = circuit
+			return circuits, indCircuit
 		}
 	}
-	// Return -1 for no match found.
 	return circuits, -1
+}
+func compactCircuits(circuits [][]int) (newCircuits [][]int) {
+	usedIndices := make(map[int]int)
+	for _, circuit := range circuits {
+		fmt.Println(circuit)
+		newCircuit := make([]int, 0)
+		previousFound := false
+		for _, val := range circuit {
+			_, exists := usedIndices[val]
+			fmt.Println(exists, usedIndices)
+			if !exists {
+				usedIndices[val] = len(newCircuits)
+				newCircuit = append(newCircuit, val)
+			} else {
+				destinationIndex := usedIndices[val]
+				for _, valToAdd := range circuit {
+					if !slices.Contains(newCircuits[destinationIndex], valToAdd) {
+						newCircuits[destinationIndex] = append(newCircuits[destinationIndex], valToAdd)
+					}
+				}
+				for _, node := range circuit {
+					usedIndices[node] = destinationIndex
+				}
+				previousFound = true
+				break
+			}
+		}
+		if !previousFound {
+			newCircuits = append(newCircuits, newCircuit)
+		}
+		fmt.Println(newCircuits)
+	}
+
+	return newCircuits
 }
 
 func MainPart1() {
-	positions, err := parseInputFile("test_inputs/p1_example.txt")
-	// positions, err := parseInputFile("input.txt")
+	// positions, err := parseInputFile("test_inputs/p1_example.txt")
+	positions, err := parseInputFile("input.txt")
 	if err != nil {
 		panic(err)
 	}
@@ -134,11 +157,11 @@ func MainPart1() {
 	matchedCircuitInd := -1
 	ind := 0
 	for {
-		fmt.Println(ind, "/", 499000)
-		if ind == 10 {
-			break
-		}
-		if ind == 1001 {
+		fmt.Println(ind)
+		// if ind == 10 {
+		// 	break
+		// }
+		if ind == 1000 {
 			break
 		}
 		ind += 1
@@ -150,7 +173,7 @@ func MainPart1() {
 		// Adding to circuits.
 		circuits, matchedCircuitInd = addToCircuits(circuits, minIndY, minIndX)
 		distanceMat[minIndY][minIndX] = 0
-		fmt.Println(circuits, matchedCircuitInd)
+		// fmt.Println(circuits, matchedCircuitInd)
 		if matchedCircuitInd == -1 {
 			// fmt.Println("No match found")
 			if minIndY < minIndX {
@@ -165,6 +188,15 @@ func MainPart1() {
 		// 	// i.e. the "nothing happens" case
 		// 	distanceMat[minIndY][val] = 0
 		// }
+	}
+	fmt.Println(circuits)
+	// Compacting circuits
+	for {
+		prevLen := len(circuits)
+		circuits = compactCircuits(circuits)
+		if len(circuits) == prevLen {
+			break
+		}
 	}
 	fmt.Println(circuits)
 	fmt.Println("Circuit length check")
