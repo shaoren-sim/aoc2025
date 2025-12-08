@@ -109,8 +109,8 @@ func addToCircuits(circuits [][]int, indFrom int, indTo int) ([][]int, int) {
 }
 
 func MainPart1() {
-	// positions, err := parseInputFile("test_inputs/p1_example.txt")
-	positions, err := parseInputFile("input.txt")
+	positions, err := parseInputFile("test_inputs/p1_example.txt")
+	// positions, err := parseInputFile("input.txt")
 	if err != nil {
 		panic(err)
 	}
@@ -135,19 +135,22 @@ func MainPart1() {
 	ind := 0
 	for {
 		fmt.Println(ind, "/", 499000)
-		// if ind == 11 {
-		// 	break
-		// }
+		if ind == 10 {
+			break
+		}
+		if ind == 1001 {
+			break
+		}
 		ind += 1
 		minIndY, minIndX := findMinimumIndex(distanceMat)
 		if minIndY < 0 || minIndX < 0 {
 			break
 		}
-		// fmt.Println("Found connection between", positions[minIndY], "and", positions[minIndX])
+		fmt.Println("Found connection between", minIndY, "and", minIndX)
 		// Adding to circuits.
 		circuits, matchedCircuitInd = addToCircuits(circuits, minIndY, minIndX)
 		distanceMat[minIndY][minIndX] = 0
-		// fmt.Println(circuits, matchedCircuitInd)
+		fmt.Println(circuits, matchedCircuitInd)
 		if matchedCircuitInd == -1 {
 			// fmt.Println("No match found")
 			if minIndY < minIndX {
@@ -157,22 +160,35 @@ func MainPart1() {
 			}
 			continue
 		}
-		for _, val := range circuits[matchedCircuitInd] {
-			// If a value already exists in a circuit, disable tracking of all linked values.
-			// i.e. the "nothing happens" case
-			distanceMat[minIndY][val] = 0
-		}
+		// for _, val := range circuits[matchedCircuitInd] {
+		// 	// If a value already exists in a circuit, disable tracking of all linked values.
+		// 	// i.e. the "nothing happens" case
+		// 	distanceMat[minIndY][val] = 0
+		// }
 	}
 	fmt.Println(circuits)
 	fmt.Println("Circuit length check")
 	circuitLengths := make([]int, 0)
 	totalProduct := 1
+	allInds := make([]int, len(positions))
+	for i := range positions {
+		allInds[i] = i
+	}
+	unusedInds := make([]int, 0)
+	usedInds := make([]int, 0)
 	for _, circuit := range circuits {
+		usedInds = append(usedInds, circuit...)
 		circuitLengths = append(circuitLengths, len(circuit))
 	}
-	fmt.Println(circuitLengths)
+	for _, ind := range allInds {
+		if !slices.Contains(usedInds, ind) {
+			unusedInds = append(unusedInds, ind)
+		}
+	}
+	// fmt.Println(circuitLengths)
 	slices.Sort(circuitLengths)
 	fmt.Println(circuitLengths)
+	fmt.Println(unusedInds)
 	for i := len(circuitLengths) - 1; i >= 0; i-- {
 		circuitLength := circuitLengths[i]
 		if i < len(circuitLengths)-3 {
