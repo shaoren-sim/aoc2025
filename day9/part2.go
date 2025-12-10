@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"slices"
 )
 
@@ -219,7 +220,7 @@ func createFilledPositions(redCoordMap map[[2]int]bool) map[[2]int]bool {
 	return filledCoordMap
 }
 
-func bucketFill(existingPositions map[[2]int]bool, startCoords [2]int, bucketFilledPositions map[[2]int]bool) {
+func _bucketFill(existingPositions map[[2]int]bool, startCoords [2]int, bucketFilledPositions map[[2]int]bool) {
 	fmt.Println("Bucket filling", startCoords)
 	currentX := startCoords[0]
 	currentY := startCoords[1]
@@ -257,15 +258,70 @@ func bucketFill(existingPositions map[[2]int]bool, startCoords [2]int, bucketFil
 			fmt.Println(candidatePosition, "is already part of the edges/corners.")
 			continue
 		}
-		bucketFill(existingPositions, candidatePosition, bucketFilledPositions)
+		_bucketFill(existingPositions, candidatePosition, bucketFilledPositions)
 	}
 }
 
-func visualize(redCoords map[[2]int]bool, greenCoords map[[2]int]bool) {
+func bucketFill(existingPositions map[[2]int]bool, startCoords [2]int, bucketFilledPositions map[[2]int]bool, maxX int, maxY int) {
+	fmt.Println("Bucket filling", startCoords)
+	currentX := startCoords[0]
+	currentY := startCoords[1]
+
+	if currentX < 0 || currentY < 0 || currentX > maxX || currentY > maxY {
+		fmt.Println("Start coordinates out of bounds.")
+		return
+	}
+	stack := [][2]int{startCoords}
+	visited := make(map[[2]int]bool)
+	visited[startCoords] = true
+	for len(stack) != 0 {
+		// Pop value from stack.
+		candidatePosition := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+
+		// fmt.Println("Popped", candidatePosition, "from stack of size", len(stack))
+
+		candidateX := candidatePosition[0]
+		candidateY := candidatePosition[1]
+
+		_, exists := existingPositions[candidatePosition]
+		if exists {
+			// fmt.Println(candidatePosition, "is already part of the edges/corners.")
+			continue
+		}
+		bucketFilledPositions[candidatePosition] = true
+
+		candidatePositions := [][2]int{
+			{candidateX, candidateY - 1},
+			{candidateX, candidateY + 1},
+			{candidateX - 1, candidateY},
+			{candidateX + 1, candidateY},
+		}
+		for _, newCandidatePos := range candidatePositions {
+			_, previouslyChecked := visited[newCandidatePos]
+			if previouslyChecked {
+				continue
+			}
+			if newCandidatePos[0] < 0 || newCandidatePos[1] < 0 || newCandidatePos[0] > maxX || newCandidatePos[1] > maxY {
+				// fmt.Println("Out of bounds.")
+				continue
+			}
+			_, exists = existingPositions[newCandidatePos]
+			if exists {
+				// fmt.Println(newCandidatePos, "is already part of the edges/corners.")
+				continue
+			}
+			stack = append(stack, newCandidatePos)
+			visited[newCandidatePos] = true
+		}
+	}
+}
+
+func visualize(redCoords map[[2]int]bool, greenCoords map[[2]int]bool, maxX int, maxY int) {
 	// Initialize empty viz
-	viz := make([][]int, 10)
+	viz := make([][]int, maxY+1)
 	for i := range viz {
-		vizRow := make([]int, 15)
+		vizRow := make([]int, maxX+1)
 		viz[i] = vizRow
 	}
 	for redCoord := range redCoords {
@@ -280,27 +336,40 @@ func visualize(redCoords map[[2]int]bool, greenCoords map[[2]int]bool) {
 }
 
 func MainPart2() {
-	positions, err := parseInputFile("test_inputs/p1_example.txt")
-	// positions, err := parseInputFile("input.txt")
+	// positions, err := parseInputFile("test_inputs/p1_example.txt")
+	positions, err := parseInputFile("input.txt")
 	if err != nil {
 		panic(err)
 	}
 
 	// simplify positions to start at {0, 0}
-	// minX := math.MaxInt
-	// minY := math.MaxInt
-	// for _, position := range positions {
-	// 	if position[0] < minX {
-	// 		minX = position[0]
-	// 	}
-	// 	if position[1] < minY {
-	// 		minY = position[1]
-	// 	}
-	// }
-	// // Normalize
-	// for posInd, position := range positions {
-	// 	positions[posInd] = [2]int{position[0] - minX, position[1] - minY}
-	// }
+	minX := math.MaxInt
+	minY := math.MaxInt
+	maxX := -1
+	maxY := -1
+	for _, position := range positions {
+		if position[0] < minX {
+			minX = position[0]
+		}
+		if position[1] < minY {
+			minY = position[1]
+		}
+		if position[0] > maxX {
+			maxX = position[0]
+		}
+		if position[1] > maxY {
+			maxY = position[1]
+		}
+	}
+	// Normalize
+	for posInd, position := range positions {
+		positions[posInd] = [2]int{position[0] - minX, position[1] - minY}
+	}
+	// Correct upper bounds too
+	maxX = maxX - minX
+	maxY = maxY - minY
+	fmt.Println("X:", minX, "to", maxX)
+	fmt.Println("Y:", minY, "to", maxY)
 
 	// Create list of "green" positions, i.e. filled between all existing positions.
 	// fmt.Println(positions)
@@ -322,10 +391,11 @@ func MainPart2() {
 	}
 	// fmt.Println(existingPositions)
 	// visualize(redCoordMap, make(map[[2]int]bool))
-	// visualize(redCoordMap, filledCoordMap)
+	// visualize(redCoordMap, filledCoordMap, maxX, maxY)
+	// panic("Check")
 	bucketFilledPositions := make(map[[2]int]bool)
 	fmt.Println("Doing bucket filling")
-	bucketFill(existingPositionsMap, [2]int{positions[0][0] + 1, positions[0][1] + 1}, bucketFilledPositions)
+	bucketFill(existingPositionsMap, [2]int{maxX / 2, maxY / 2}, bucketFilledPositions, maxX, maxY)
 	// fmt.Println(bucketFilledPositions)
 	filledPositions := make(map[[2]int]bool)
 	for redCoord := range redCoordMap {
@@ -337,7 +407,7 @@ func MainPart2() {
 	for bucketFilledPosition := range bucketFilledPositions {
 		filledPositions[bucketFilledPosition] = true
 	}
-	visualize(redCoordMap, filledPositions)
+	// visualize(redCoordMap, filledPositions, maxX, maxY)
 	areaMat := make([][]int, len(positions))
 	for indA, positionA := range positions {
 		areaRow := make([]int, len(positions))
